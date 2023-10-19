@@ -91,9 +91,8 @@ def main():
     print('#' * 30)
 
     if (frame_width <= 500) or (frame_height <= 500):
-        print('frame_width*2')
-        print('frame_height*2')
-        cv2.resizeWindow('Detected Objects', frame_width + 300, frame_height + 300)
+        cv2.resizeWindow('Detected Objects', frame_width + (frame_width // 2), frame_height + (frame_height // 2))
+
 
     while cap.isOpened():
         new_frame_time = time.time()
@@ -119,6 +118,7 @@ def main():
 
         combined_img = yolov8_detector.draw_detections(frame, file_save_txt=file_out)
         cv2.putText(combined_img, f'fps: {fps}', (30, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        # cv2.putText(combined_img, f'fps: {fps}', (30, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
         cv2.imshow("Detected Objects", combined_img)
         # if save_video:
