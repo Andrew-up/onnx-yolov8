@@ -88,14 +88,12 @@ def main():
     if frame_width >= 1024 and frame_height >= 1024:
         cv2.resizeWindow('Detected Objects', frame_width // 2, frame_height // 2)
 
-    print(frame_width <= 400)
-    print(frame_height <= 400)
     print('#' * 30)
 
     if (frame_width <= 500) or (frame_height <= 500):
         print('frame_width*2')
         print('frame_height*2')
-        cv2.resizeWindow('Detected Objects', frame_width * 2, frame_height * 2)
+        cv2.resizeWindow('Detected Objects', frame_width + 300, frame_height + 300)
 
     while cap.isOpened():
         new_frame_time = time.time()
