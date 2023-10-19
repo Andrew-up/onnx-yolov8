@@ -130,7 +130,7 @@ def draw_detections(image, boxes, scores, class_ids, mask_alpha=0.3, file_save_t
             with open(file_save_txt, 'a', encoding='utf-8') as f:
                 f.write(text+"\n")
     else:
-        cv2.putText(det_img, f'NO DETECTION:', (30, img_height - 30), font, 1, (0, 0, 255), 2,
+        cv2.putText(det_img, f'::NO DETECTION::', (30, img_height - 30), font, 1, (0, 0, 255), 2,
                     cv2.LINE_AA)
 
     return det_img
