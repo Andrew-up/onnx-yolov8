@@ -88,7 +88,7 @@ def main():
     if frame_width >= 1024 and frame_height >= 1024:
         cv2.resizeWindow('Detected Objects', frame_width // 2, frame_height // 2)
 
-    if frame_width <= 400 and frame_height <= 400:
+    if frame_width <= 400 or frame_height <= 400:
         print('frame_width*2')
         print('frame_height*2')
         cv2.resizeWindow('Detected Objects', frame_width * 2, frame_height * 2)
