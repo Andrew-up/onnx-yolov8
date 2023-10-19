@@ -122,19 +122,19 @@ def draw_detections(image, boxes, scores, class_ids, mask_alpha=0.3, file_save_t
             size_circle = (y2minusy1 - x2minusx1) // 3
 
         center = int((x1 + x2) / 2), int((y1 + y2) / 2)
-        cv2.putText(det_img, f'center: {center}', (30, img_height - 30), font, 1, (0, 0, 255), 2,
+        cv2.putText(det_img, f'{label}, center: {center} ', (30, img_height - 30), font, 1, (0, 255, 50), 2,
                     cv2.LINE_AA)
         cv2.circle(det_img, center, size_circle, (0, 255, 12), 2)
         text = f'center: {center}, box xyxy: {boxes[max_num].astype(int)}, detect: {caption}'
         if file_save_txt:
             with open(file_save_txt, 'a', encoding='utf-8') as f:
                 f.write(text+"\n")
+    else:
+        cv2.putText(det_img, f'NO DETECTION:', (30, img_height - 30), font, 1, (0, 0, 255), 2,
+                    cv2.LINE_AA)
 
     return det_img
 
-
-def draw_one_box():
-    ...
 
 
 def draw_box(image: np.ndarray, box: np.ndarray, color: tuple[int, int, int] = (0, 0, 255),

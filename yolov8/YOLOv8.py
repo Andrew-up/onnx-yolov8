@@ -1,11 +1,15 @@
+import os
 import time
 from functools import lru_cache
 
 import cv2
 import numpy as np
+
+os.environ['OMP_NUM_THREADS'] = '2'
 import onnxruntime
 
 from yolov8.utils import xywh2xyxy, draw_detections, multiclass_nms, xyxy2xywh
+import platform
 
 
 class Boxes:
@@ -33,6 +37,13 @@ class YOLOv8:
     def __init__(self, path, conf_thres=0.7, iou_thres=0.5):
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
+        self.providers = [
+            ('TensorrtExecutionProvider', {
+                'trt_engine_cache_enable': True,
+            }),
+            'CUDAExecutionProvider'
+        ]
+
         # Initialize model
         self.initialize_model(path)
 
@@ -40,8 +51,14 @@ class YOLOv8:
         return self.detect_objects(image)
 
     def initialize_model(self, path):
-        self.session = onnxruntime.InferenceSession(path,
-                                                    providers=onnxruntime.get_available_providers())
+        opts = onnxruntime.SessionOptions()
+        opts.inter_op_num_threads = 4
+        opts.intra_op_num_threads = 4
+        print(platform.system())
+        if platform.system() == 'Windows':
+            self.providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+
+        self.session = onnxruntime.InferenceSession(path, providers=self.providers, opts=opts)
         # Get model info
         self.get_input_details()
         self.get_output_details()
@@ -131,7 +148,7 @@ class YOLOv8:
         boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
         return boxes
 
-    def draw_detections(self, image, draw_scores=True, mask_alpha=0.4, file_save_txt = None):
+    def draw_detections(self, image, draw_scores=True, mask_alpha=0.4, file_save_txt=None):
         return draw_detections(image, self.boxes, self.scores,
                                self.class_ids, mask_alpha, file_save_txt=file_save_txt)
 

@@ -10,25 +10,28 @@ from definitions import ROOT_DIR, OUTPUT
 from yolov8 import YOLOv8
 
 
-print('111111111111')
+def test_cam():
+    cap = cv2.VideoCapture(0)
 
+    while cap.isOpened():
 
-# # Initialize video
-# cap = cv2.VideoCapture("input.mp4")
+        # Press key q to stop
+        if cv2.waitKey(1) == ord('q'):
+            break
 
-# videoUrl = 'https://youtu.be/Snyg0RqpVxY'
-# cap = cap_from_youtube(videoUrl, resolution='720p')
-# start_time = 5 # skip first {start_time} seconds
-# cap.set(cv2.CAP_PROP_POS_FRAMES, start_time * cap.get(cv2.CAP_PROP_FPS))
+        try:
+            # Read frame from the video
+            ret, frame = cap.read()
+            cv2.imshow("Detected Objects", frame)
+            if not ret:
+                break
+        except Exception as e:
+            print(e)
+            continue
 
-
-# def testDevice(source):
-#    cap = cv2.VideoCapture(source)
-#    if cap is None or not cap.isOpened():
-#        print('Warning: unable to open video source: ', source)
 
 def main():
-    print('ooooooooooooooooooooooooookkkkkkkkkkkkkk')
+    print('start programm')
     file_config = 'config.yaml'
     input_video_path = os.path.join(ROOT_DIR, 'data/video.mp4')
     number_web_cam = 0
@@ -43,7 +46,6 @@ def main():
             number_web_cam = listyaml.get('NUM_WEBCAM')
             save_video = listyaml.get('SAVE_VIDEO')
             input_video_path = os.path.join(ROOT_DIR, listyaml.get('VIDEO_PATH'))
-
 
     print(f'use cam : {using_web_cam}')
     if not os.path.exists(OUTPUT):
@@ -78,12 +80,13 @@ def main():
 
     # Initialize YOLOv7 model
     model_path = "models/best.onnx"
-    yolov8_detector = YOLOv8(model_path, conf_thres=0.5, iou_thres=0.5)
+    yolov8_detector = YOLOv8(model_path, conf_thres=0.65)
     cv2.namedWindow("Detected Objects", cv2.WINDOW_NORMAL)
 
     prev_frame_time = 0
     font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.resizeWindow('Detected Objects', frame_width // 2, frame_height // 2)
+    if frame_width >= 1024 and frame_height >= 1024:
+        cv2.resizeWindow('Detected Objects', frame_width // 2, frame_height // 2)
 
     while cap.isOpened():
         new_frame_time = time.time()
@@ -111,8 +114,8 @@ def main():
         cv2.putText(combined_img, f'fps: {fps}', (30, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
         cv2.imshow("Detected Objects", combined_img)
-        if save_video:
-            result.write(combined_img)
+        # if save_video:
+        # result.write(combined_img)
 
     if save_video:
         result.release()

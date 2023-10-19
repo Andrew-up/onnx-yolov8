@@ -1,4 +1,6 @@
-opencv-python
-opencv-python-headless
-onnxruntime
+opencv-python==4.8.0.74
+opencv-python-headless==4.8.0.74
+# onnxruntime-gpu==1.15.1
+# onnxruntime-gpu Подобрать по таблице https://elinux.org/Jetson_Zoo
 PyYAML
+
