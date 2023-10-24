@@ -140,19 +140,35 @@ def draw_navigation(drone_location, image_size, img=None, size_text=12):
         text3 = f'{round(abs(distance_y), 3)} px vertical. fly to {direction_y} // normalized value: {round(normalized_y, 3)}'
 
         # print(len(text2))
-
         text_positionX = image_width * 0.5
+        scale_text = get_optimal_font_scale('*' * 58, text_positionX)
 
-        scale_text = get_optimal_font_scale('*'*58, text_positionX)
-        cv2.putText(img, text1, (int(image_width*0.2), 30), font, scale_text, Color_text, 1, cv2.LINE_AA)
-        cv2.putText(img, text2, (int(image_width*0.2), 60), font, scale_text, Color_text, 1, cv2.LINE_AA)
-        cv2.putText(img, text3, (int(image_width*0.2), 90), font, scale_text, Color_text, 1, cv2.LINE_AA)
-        speed_uav = 0.001
-        cv2.putText(img, f'Speed: {round((abs(distance_x) + abs(distance_y)) * speed_uav, 3)} m/c',
-                    (int(image_width*0.8), 30), font, scale_text, Color_text, 1, cv2.LINE_AA)
+        OK_POSITION_X = abs(round(normalized_x, 3)) < 0.1
+        OK_POSITION_Y = abs(round(normalized_y, 3)) < 0.1
 
-        cv2.line(img, (image_center_x, image_center_y), drone_location, (200, 0, 0), 2)
-        cv2.circle(img, (image_center_x, image_center_y), 15, (0, 255, 12), 2)
+        # print(OK_POSITION_X)
+        # print(abs(round(normalized_x, 3)))
+
+        if OK_POSITION_X:
+            cv2.putText(img, 'horizontal OK', (int(image_width * 0.2), 60), font, scale_text, Color_text, 1,
+                        cv2.LINE_AA)
+
+        if OK_POSITION_Y:
+            cv2.putText(img, 'vertical OK', (int(image_width * 0.2), 90), font, scale_text, Color_text, 1, cv2.LINE_AA)
+
+        if not OK_POSITION_X:
+            cv2.putText(img, text2, (int(image_width * 0.2), 60), font, scale_text, Color_text, 1, cv2.LINE_AA)
+
+        if not OK_POSITION_Y:
+            cv2.putText(img, text3, (int(image_width * 0.2), 90), font, scale_text, Color_text, 1, cv2.LINE_AA)
+
+        if (not OK_POSITION_X) or (not OK_POSITION_Y):
+            cv2.putText(img, text1, (int(image_width * 0.2), 30), font, scale_text, Color_text, 1, cv2.LINE_AA)
+            speed_uav = 0.001
+            cv2.putText(img, f'Speed: {round((abs(distance_x) + abs(distance_y)) * speed_uav, 3)} m/c',
+                        (int(image_width * 0.8), 30), font, scale_text, Color_text, 1, cv2.LINE_AA)
+            cv2.line(img, (image_center_x, image_center_y), drone_location, (200, 0, 0), 2)
+            cv2.circle(img, (image_center_x, image_center_y), 15, (0, 255, 12), 2)
 
         # text = f"Двигаться {'влево' if distance_x < 0 else 'вправо'} {'по горизонтали' if abs(distance_x) > 10 else ''}"
         # Вывод направления движения
