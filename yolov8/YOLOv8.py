@@ -8,7 +8,7 @@ import numpy as np
 os.environ['OMP_NUM_THREADS'] = '2'
 import onnxruntime
 
-from yolov8.utils import xywh2xyxy, draw_detections, multiclass_nms, xyxy2xywh
+from yolov8.utils import xywh2xyxy, draw_detection, multiclass_nms, xyxy2xywh, class_names, draw_navigation
 import platform
 
 
@@ -32,6 +32,18 @@ class Boxes:
         return xyxy2xywh(self.xyxy)
 
 
+class ProcessDetect:
+
+    def __init__(self):
+        self.object = None
+        self.boxes = None
+        self.center = None
+        self.color = None
+        self.name = None
+        self.score = None
+        self.img_size = None
+
+
 class YOLOv8:
 
     def __init__(self, path, conf_thres=0.7, iou_thres=0.5):
@@ -50,6 +62,66 @@ class YOLOv8:
     def __call__(self, image):
         return self.detect_objects(image)
 
+    def get_center_object(self):
+        return self.center_detect
+
+    def get_boxes_xyxy(self):
+        return self.boxes_xyxy
+
+    def get_score(self):
+        return self.score
+
+    def get_class_id(self):
+        return self.class_id
+
+    def get_class_name(self):
+        if self.class_id is not None:
+            return class_names[self.class_id]
+        return None
+
+    def get_distance_xy(self):
+        '''
+
+        :return: расстояние X и Y в px
+        '''
+        distance_x = self.get_center_object()[0] - (self.img_width // 2)
+        distance_y = self.get_center_object()[1] - (self.img_height // 2)
+        return (distance_x, distance_y)
+
+    def get_distance_xyn(self):
+        '''
+
+        :return: Нормализованное расстояние X и Y  от -1 до 1
+        '''
+        distancexy = self.get_distance_xy()
+        return (distancexy[0] / (self.img_width // 2), distancexy[1] / (self.img_height // 2))
+
+    def get_speed(self):
+        '''
+        :return: Скорость полета в м/c
+        '''
+        speed_uav = 0.001
+        distancexy = self.get_distance_xy()
+        return round((abs(distancexy[0]) + abs(distancexy[1])) * speed_uav, 3)
+
+    def get_direction_uav(self):
+        '''
+
+        :return: Направление полета UAV
+        '''
+        distance_x, distance_y = self.get_distance_xy()
+        if distance_x < 0:
+            direction_x = "left"
+        else:
+            direction_x = "rigth"
+
+        if distance_y < 0:
+            direction_y = "up"
+        else:
+            direction_y = "down"
+
+        return direction_x, direction_y
+
     def initialize_model(self, path):
         opts = onnxruntime.SessionOptions()
         opts.inter_op_num_threads = 4
@@ -59,7 +131,6 @@ class YOLOv8:
             self.providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
 
         self.session = onnxruntime.InferenceSession(path, providers=self.providers, opts=opts)
-        # Get model info
         self.get_input_details()
         self.get_output_details()
 
@@ -68,20 +139,22 @@ class YOLOv8:
 
         # Perform inference on the image
         outputs = self.inference(input_tensor)
-
         self.boxes, self.scores, self.class_ids = self.process_output(outputs)
-        data = list(zip(self.boxes, self.scores, self.class_ids))
+        self.detect_many2one()
 
-        result_list = []
+        # data = list(zip(self.boxes, self.scores, self.class_ids))
 
-        for tup in data:
-            sub_list = list(tup[0])  # Преобразовать первый элемент кортежа в список
-            sub_list.extend([tup[1], tup[2]])  # Добавить остальные элементы кортежа в список
-            result_list.append(sub_list)
+        # result_list = []
+        #
+        # for tup in data:
+        #     sub_list = list(tup[0])  # Преобразовать первый элемент кортежа в список
+        #     sub_list.extend([tup[1], tup[2]])  # Добавить остальные элементы кортежа в список
+        #     result_list.append(sub_list)
 
-        self.boxes2 = Boxes(data=np.array(result_list), orig_shape=image.shape)
+        # self.boxes2 = Boxes(data=np.array(result_list), orig_shape=image.shape)
         # print(self.boxes2.xyxy)
         # print(self.boxes2.xywh)
+
         return self.boxes, self.scores, self.class_ids
 
     def prepare_input(self, image):
@@ -148,9 +221,33 @@ class YOLOv8:
         boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
         return boxes
 
-    def draw_detections(self, image, draw_scores=True, mask_alpha=0.4, file_save_txt=None):
-        return draw_detections(image, self.boxes, self.scores,
-                               self.class_ids, mask_alpha, file_save_txt=file_save_txt)
+    def detect_many2one(self):
+        max_class = 0
+        max_score = 0
+        self.boxes_xyxy = None
+        self.score = None
+        self.class_id = None
+        self.center_detect = None
+        for num, (class_id, box, score) in enumerate(zip(self.class_ids, self.boxes, self.scores)):
+            if max_score < score:
+                max_score = score
+                max_class = num
+
+        if max_score > 0:
+            x1, y1, x2, y2 = self.boxes[max_class].astype(int)
+            self.center_detect = int((x1 + x2) / 2), int((y1 + y2) / 2)
+            self.boxes_xyxy = self.boxes[max_class].astype(int)
+            self.score = max_score
+            self.class_id = max_class
+
+    def draw_navigation_uav_debug(self, image):
+        return draw_navigation(drone_location=self.get_center_object(),
+                               image_size=(self.img_width, self.img_height),
+                               img=image)
+
+    def draw_detection(self, image, draw_scores=True, mask_alpha=0.4, file_save_txt=None):
+        return draw_detection(image, self.boxes_xyxy, self.score,
+                              self.class_id, mask_alpha, file_save_txt=file_save_txt)
 
     def get_input_details(self):
         model_inputs = self.session.get_inputs()
@@ -179,7 +276,7 @@ if __name__ == '__main__':
     yolov8_detector(img)
 
     # Draw detections
-    combined_img = yolov8_detector.draw_detections(img)
+    combined_img = yolov8_detector.draw_detection(img)
     cv2.namedWindow("Output", cv2.WINDOW_NORMAL)
     cv2.imshow("Output", combined_img)
     cv2.waitKey(0)

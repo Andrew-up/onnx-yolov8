@@ -6,7 +6,7 @@ class_names = ['Helicopter']
 # Create a list of colors for each class where each color is a tuple of 3 integer values
 rng = np.random.default_rng(3)
 colors = rng.uniform(0, 255, size=(len(class_names), 3))
-font = cv2.FONT_HERSHEY_SIMPLEX
+font = cv2.FONT_HERSHEY_COMPLEX
 
 
 def nms(boxes, scores, iou_threshold):
@@ -86,30 +86,83 @@ def xyxy2xywh(x):
     return y
 
 
-def draw_detections(image, boxes, scores, class_ids, mask_alpha=0.3, file_save_txt=None):
+def draw_navigation(drone_location, image_size, img=None):
+    if drone_location:
+        # Размеры изображения
+        image_width, image_height = image_size
+
+        # Расчет центра изображения
+        image_center_x = image_width // 2
+        image_center_y = image_height // 2
+
+        # Текущая позиция БПЛА
+        drone_x, drone_y = drone_location
+
+        # Расчет расстояния до центра изображения
+        distance_x = drone_x - image_center_x
+        distance_y = drone_y - image_center_y
+
+        # Вывод расстояния до центра в пикселях
+        # print(
+        # f"Расстояние до центра изображения: {abs(distance_x)} пикселя(-ей) по горизонтали, {abs(distance_y)} пикселя(-ей) по вертикали")
+
+        # Расчет нормализованных значений
+        normalized_x = distance_x / image_center_x
+        normalized_y = distance_y / image_center_y
+
+        # Вывод нормализованных значений
+        # print(f"Нормализованное значение (от -1 до 1): по горизонтали: {normalized_x}, по вертикали: {normalized_y}")
+
+        # Определение направления движения для центрирования
+        if distance_x < 0:
+            direction_x = "left"
+        else:
+            direction_x = "rigth"
+
+        if distance_y < 0:
+            direction_y = "up"
+        else:
+            direction_y = "down"
+
+        Color_text = (217, 0, 255)
+        cv2.putText(img, f'distance UAV to center frame: ', (300, 30), font, 1, Color_text, 2, cv2.LINE_AA)
+        cv2.putText(img,
+                    f'{round(abs(distance_x), 3)} px horizontal. fly to {direction_x} // normalized value: {round(normalized_x, 3)}',
+                    (300, 60), font, 1, Color_text, 2, cv2.LINE_AA)
+        cv2.putText(img,
+                    f'{round(abs(distance_y), 3)} px vertical. fly to {direction_y} // normalized value: {round(normalized_y, 3)}',
+                    (300, 90), font, 1, Color_text, 2, cv2.LINE_AA)
+        speed_uav = 0.001
+        cv2.putText(img, f'Speed: {round((abs(distance_x) + abs(distance_y)) * speed_uav, 3)} m/c',
+                    (image_size[0] - 400, 50), font, 1, Color_text, 2, cv2.LINE_AA)
+
+        cv2.line(img, (image_center_x, image_center_y), drone_location, (200, 0, 0), 2)
+        cv2.circle(img, (image_center_x, image_center_y), 15, (0, 255, 12), 2)
+
+        # text = f"Двигаться {'влево' if distance_x < 0 else 'вправо'} {'по горизонтали' if abs(distance_x) > 10 else ''}"
+        # Вывод направления движения
+        # print(f"{text}")
+    return img
+
+
+def draw_detection(image, boxes_xyxy, score, class_id, mask_alpha=0.3, file_save_txt=None):
     det_img = image.copy()
-
     img_height, img_width = image.shape[:2]
-    font_size = min([img_height, img_width]) * 0.0006
-    text_thickness = int(min([img_height, img_width]) * 0.001)
+    if (boxes_xyxy is not None) and (score > 0):
 
-    max_num = 0
-    max_score = 0
-    # Draw bounding boxes and labels of detections
-    for num, (class_id, box, score) in enumerate(zip(class_ids, boxes, scores)):
-        if max_score < score:
-            max_score = score
-            max_num = num
+        font_size = min([img_height, img_width]) * 0.0006
+        text_thickness = int(min([img_height, img_width]) * 0.001)
 
-    if max_score > 0:
-        det_img = draw_masks(det_img, np.array([boxes[max_num]]), np.array([class_ids[max_num]]), mask_alpha)
-        color = colors[class_ids[max_num]]
-        draw_box(det_img, boxes[max_num], color)
-        label = class_names[class_ids[max_num]]
-        sc = str(scores[max_num].round(2))
+        # center_frame = (img_width // 2, img_height // 2)
+
+        det_img = draw_masks(det_img, np.array([boxes_xyxy]), np.array([class_id]), mask_alpha)
+        color = colors[class_id]
+        draw_box(det_img, boxes_xyxy, color)
+        label = class_names[class_id]
+        sc = str(score.round(2))
         caption = f'{label} {sc}'
-        draw_text(det_img, caption, boxes[max_num], color, font_size, text_thickness)
-        x1, y1, x2, y2 = boxes[max_num].astype(int)
+        draw_text(det_img, caption, boxes_xyxy, color, font_size, text_thickness)
+        x1, y1, x2, y2 = boxes_xyxy.astype(int)
 
         # print(x1, y1, x2, y2)
         size_circle = 0
@@ -125,16 +178,18 @@ def draw_detections(image, boxes, scores, class_ids, mask_alpha=0.3, file_save_t
         cv2.putText(det_img, f'{label}, center: {center} ', (30, img_height - 30), font, 1, (0, 255, 50), 2,
                     cv2.LINE_AA)
         cv2.circle(det_img, center, size_circle, (0, 255, 12), 2)
-        text = f'center: {center}, box xyxy: {boxes[max_num].astype(int)}, detect: {caption}'
+        # calculate_position_drone(det_img, center, (img_width, img_height))
+
+        text = f'center: {center}, box xyxy: {boxes_xyxy.astype(int)}, detect: {caption}'
+
         if file_save_txt:
             with open(file_save_txt, 'a', encoding='utf-8') as f:
-                f.write(text+"\n")
+                f.write(text + "\n")
     else:
         cv2.putText(det_img, f'::NO DETECTION::', (30, img_height - 30), font, 1, (0, 0, 255), 2,
                     cv2.LINE_AA)
 
     return det_img
-
 
 
 def draw_box(image: np.ndarray, box: np.ndarray, color: tuple[int, int, int] = (0, 0, 255),

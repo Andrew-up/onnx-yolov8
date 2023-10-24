@@ -13,7 +13,7 @@ img = cv2.imread('data/IMG_20231004_135725.jpg')
 boxes, scores, class_ids = yolov8_detector(img)
 
 # Draw detections
-combined_img = yolov8_detector.draw_detections(img)
+combined_img = yolov8_detector.draw_detection(img)
 cv2.namedWindow("Detected Objects", cv2.WINDOW_NORMAL)
 cv2.imshow("Detected Objects", combined_img)
 cv2.imwrite("doc/img/detected_objects.jpg", combined_img)

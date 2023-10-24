@@ -8,6 +8,7 @@ import yaml
 
 from definitions import ROOT_DIR, OUTPUT
 from yolov8 import YOLOv8
+from yolov8.YOLOv8 import ProcessDetect
 
 
 def test_cam():
@@ -115,14 +116,28 @@ def main():
 
         # Update object localizer
         boxes, scores, class_ids = yolov8_detector(frame)
+        frame = yolov8_detector.draw_detection(frame, file_save_txt=file_out)
+        frame = yolov8_detector.draw_navigation_uav_debug(frame)
 
-        combined_img = yolov8_detector.draw_detections(frame, file_save_txt=file_out)
-        cv2.putText(combined_img, f'fps: {fps}', (30, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-        # cv2.putText(combined_img, f'fps: {fps}', (30, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        p = ProcessDetect()
+        p.boxes = yolov8_detector.boxes
+        p.center = yolov8_detector.get_center_object()
+        p.name = yolov8_detector.get_class_name()
+        p.score = yolov8_detector.get_score()
+        p.img_size = size
 
-        cv2.imshow("Detected Objects", combined_img)
+
+        # print(yolov8_detector.get_distance_xy())
+        # print(yolov8_detector.get_distance_xyn())
+        # print(yolov8_detector.get_speed())
+        # print(yolov8_detector.get_direction_uav())
+
+
+        cv2.putText(frame, f'fps: {fps}', (30, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        cv2.imshow("Detected Objects", frame)
         # if save_video:
         # result.write(combined_img)
+        del p
 
     if save_video:
         result.release()
