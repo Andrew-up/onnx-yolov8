@@ -86,7 +86,17 @@ def xyxy2xywh(x):
     return y
 
 
-def draw_navigation(drone_location, image_size, img=None):
+def get_optimal_font_scale(text, width):
+    for scale in reversed(range(0, 60, 1)):
+        textSize = cv2.getTextSize(text, fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=scale / 10, thickness=1)
+        new_width = textSize[0][0]
+        if (new_width <= width):
+            # print(new_width)
+            return scale / 10
+    return 1
+
+
+def draw_navigation(drone_location, image_size, img=None, size_text=12):
     if drone_location:
         # Размеры изображения
         image_width, image_height = image_size
@@ -125,16 +135,21 @@ def draw_navigation(drone_location, image_size, img=None):
             direction_y = "down"
 
         Color_text = (217, 0, 255)
-        cv2.putText(img, f'distance UAV to center frame: ', (300, 30), font, 1, Color_text, 2, cv2.LINE_AA)
-        cv2.putText(img,
-                    f'{round(abs(distance_x), 3)} px horizontal. fly to {direction_x} // normalized value: {round(normalized_x, 3)}',
-                    (300, 60), font, 1, Color_text, 2, cv2.LINE_AA)
-        cv2.putText(img,
-                    f'{round(abs(distance_y), 3)} px vertical. fly to {direction_y} // normalized value: {round(normalized_y, 3)}',
-                    (300, 90), font, 1, Color_text, 2, cv2.LINE_AA)
+        text1 = f'distance UAV to center frame: '
+        text2 = f'{round(abs(distance_x), 3)} px horizontal. fly to {direction_x} // normalized value: {round(normalized_x, 3)}'
+        text3 = f'{round(abs(distance_y), 3)} px vertical. fly to {direction_y} // normalized value: {round(normalized_y, 3)}'
+
+        # print(len(text2))
+
+        text_positionX = image_width * 0.5
+
+        scale_text = get_optimal_font_scale('*'*58, text_positionX)
+        cv2.putText(img, text1, (int(image_width*0.2), 30), font, scale_text, Color_text, 1, cv2.LINE_AA)
+        cv2.putText(img, text2, (int(image_width*0.2), 60), font, scale_text, Color_text, 1, cv2.LINE_AA)
+        cv2.putText(img, text3, (int(image_width*0.2), 90), font, scale_text, Color_text, 1, cv2.LINE_AA)
         speed_uav = 0.001
         cv2.putText(img, f'Speed: {round((abs(distance_x) + abs(distance_y)) * speed_uav, 3)} m/c',
-                    (image_size[0] - 400, 50), font, 1, Color_text, 2, cv2.LINE_AA)
+                    (int(image_width*0.8), 30), font, scale_text, Color_text, 1, cv2.LINE_AA)
 
         cv2.line(img, (image_center_x, image_center_y), drone_location, (200, 0, 0), 2)
         cv2.circle(img, (image_center_x, image_center_y), 15, (0, 255, 12), 2)

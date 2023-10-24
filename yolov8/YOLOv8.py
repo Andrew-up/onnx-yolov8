@@ -240,10 +240,10 @@ class YOLOv8:
             self.score = max_score
             self.class_id = max_class
 
-    def draw_navigation_uav_debug(self, image):
+    def draw_navigation_uav_debug(self, image, size_text):
         return draw_navigation(drone_location=self.get_center_object(),
                                image_size=(self.img_width, self.img_height),
-                               img=image)
+                               img=image, size_text=size_text)
 
     def draw_detection(self, image, draw_scores=True, mask_alpha=0.4, file_save_txt=None):
         return draw_detection(image, self.boxes_xyxy, self.score,

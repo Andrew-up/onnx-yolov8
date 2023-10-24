@@ -38,6 +38,7 @@ def main():
     number_web_cam = 0
     using_web_cam = False
     save_video = False
+    size_text = 12
     if os.path.exists(os.path.join(ROOT_DIR, file_config)):
         with open(os.path.join(ROOT_DIR, file_config), mode='r', encoding='utf-8') as file_yaml:
             # rwerwer = yaml.safe_load(file_yaml)
@@ -46,6 +47,7 @@ def main():
             using_web_cam = listyaml.get('USING_WEB_CAM')
             number_web_cam = listyaml.get('NUM_WEBCAM')
             save_video = listyaml.get('SAVE_VIDEO')
+            size_text = listyaml.get('SIZE_TEXT')
             input_video_path = os.path.join(ROOT_DIR, listyaml.get('VIDEO_PATH'))
 
     print(f'use cam : {using_web_cam}')
@@ -94,7 +96,6 @@ def main():
     if (frame_width <= 500) or (frame_height <= 500):
         cv2.resizeWindow('Detected Objects', frame_width + (frame_width // 2), frame_height + (frame_height // 2))
 
-
     while cap.isOpened():
         new_frame_time = time.time()
         fps = 1 / (new_frame_time - prev_frame_time)
@@ -117,7 +118,7 @@ def main():
         # Update object localizer
         boxes, scores, class_ids = yolov8_detector(frame)
         frame = yolov8_detector.draw_detection(frame, file_save_txt=file_out)
-        frame = yolov8_detector.draw_navigation_uav_debug(frame)
+        frame = yolov8_detector.draw_navigation_uav_debug(frame, size_text)
 
         p = ProcessDetect()
         p.boxes = yolov8_detector.boxes
@@ -126,13 +127,11 @@ def main():
         p.score = yolov8_detector.get_score()
         p.img_size = size
 
-
         # print(p.__dict__)
         # print(yolov8_detector.get_distance_xy())
         # print(yolov8_detector.get_distance_xyn())
         # print(yolov8_detector.get_speed())
         # print(yolov8_detector.get_direction_uav())
-
 
         cv2.putText(frame, f'fps: {fps}', (30, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
         cv2.imshow("Detected Objects", frame)

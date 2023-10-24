@@ -2,3 +2,4 @@ VIDEO_PATH: data/video.mp4 #Относительно родительского 
 USING_WEB_CAM: False # Если стоит True, Используется NUM_WEBCAM и игноируется VIDEO_PATH
 NUM_WEBCAM: 0 # Камера по умолчанию, возможно нужно пробросить камеру в сам Docker-контейнер
 SAVE_VIDEO: False #Сохранять ли видео результата
+SIZE_TEXT: 12
