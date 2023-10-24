@@ -127,6 +127,7 @@ def main():
         p.img_size = size
 
 
+        # print(p.__dict__)
         # print(yolov8_detector.get_distance_xy())
         # print(yolov8_detector.get_distance_xyn())
         # print(yolov8_detector.get_speed())
